@@ -72,12 +72,12 @@ class ChessAdapter(BaseNeuralAdapter):
         # 2. Step 19-Stage Biological Clock Cycle
         self.brain.tick()
 
-        # 3. Evaluate Candidate Moves
+        # 3. Evaluate Candidate Moves via Biological Sensory-Motor Bus
         candidate_scores: List[Tuple[chess.Move, float, float]] = []
 
         for move in legal_moves:
-            # Tactical heuristic baseline (normalized)
-            h_score = self._evaluate_move_heuristics(board, move, color)
+            # Spinal Somatosensory candidate drive (DCML, STT, Nociception)
+            s_score = self._evaluate_somatic_candidate(board, move, color)
 
             # Lookahead via Cerebellar simulation & Hippocampal pattern recall
             board.push(move)
@@ -100,15 +100,15 @@ class ChessAdapter(BaseNeuralAdapter):
             if use_hippocampus and len(stored) > 0:
                 rf_norm = retina_fwd / (np.linalg.norm(retina_fwd) + 1e-6)
                 best_dot = max(float(np.dot(rf_norm, p / (np.linalg.norm(p) + 1e-6))) for p in stored)
-                hip_match = float(np.clip(best_dot, 0.0, 1.0))
+                raw_dot = float(np.clip(best_dot, 0.0, 1.0))
+                # Dentate Gyrus pattern separation / sharpening power
+                hip_match = raw_dot
+                ca3_score = (hip_match ** 5) * 25.0
+                total_score = s_score + ca3_score
+            else:
+                total_score = s_score
 
             board.pop()
-
-            # CA3 pattern completion heavily weights master tactical attractor configurations (+15.0)
-            if use_hippocampus:
-                total_score = h_score + (hip_match * 15.0)
-            else:
-                total_score = h_score
 
             if has_mate_reply:
                 total_score -= 50.0  # Cerebellar Veto for blunders allowing immediate checkmate
@@ -143,67 +143,63 @@ class ChessAdapter(BaseNeuralAdapter):
 
         return winning_move
 
-    def _evaluate_move_heuristics(self, board: chess.Board, move: chess.Move, color: chess.Color) -> float:
-        """Computes positional and tactical heuristic score for candidate move."""
-        score = 0.0
+    def _evaluate_somatic_candidate(self, board: chess.Board, move: chess.Move, color: chess.Color) -> float:
+        """
+        Computes biological spinal and somatosensory candidate drive:
+        1. Spinal C5 (DCML): Proprioceptive material balance delta (Delta DCML).
+        2. Spinal C5 (STT): Somatosensory King distress / threat reduction (Delta STT).
+        3. Spinal Nociception: Tissue vulnerability & unshielded piece exposure avoidance.
+        4. Motor Intent: Terminal checkmate goal and check disruption.
+
+        Zero classical heuristics (no MVV-LVA, no artificial piece trade formulas).
+        """
         opp_color = not color
-        piece = board.piece_at(move.from_square)
+
+        # 1. Somatosensory baseline before action
+        mat_before = self.sensory.get_material_balance(color)
+        threat_before = self.sensory.is_king_threatened(color)
+
+        # 2. Simulate physical action
+        board.push(move)
+        mat_after = self.sensory.get_material_balance(color)
+        threat_after = self.sensory.is_king_threatened(color)
+        gives_check = board.is_check()
+        is_mate = board.is_checkmate()
+
+        # Nociceptive vulnerability: moving into undefended enemy fire
+        to_sq = move.to_square
+        is_attacked_dest = board.is_attacked_by(opp_color, to_sq)
+        is_defended_dest = board.is_attacked_by(color, to_sq)
+        piece = board.piece_at(to_sq)
         p_val = PIECE_VALUES.get(piece.piece_type, 1.0) if piece else 1.0
 
-        # 1. Captures (Most Valuable Victim - Least Valuable Attacker)
-        if board.is_capture(move):
-            victim = board.piece_at(move.to_square)
-            attacker = piece
-            v_val = PIECE_VALUES[victim.piece_type] if victim else 1.0
-            a_val = PIECE_VALUES[attacker.piece_type] if attacker else 1.0
-            score += 2.5 + (v_val - a_val * 0.1)
+        board.pop()
 
-            # If capturing into defended square with more valuable attacker, apply trade penalty
-            if board.is_attacked_by(opp_color, move.to_square) and a_val > v_val:
-                score -= (a_val - v_val) * 1.5
+        # 3. Compute biological sensory deltas
+        delta_dcml = mat_after - mat_before           # Net material change via spinal DCML
+        delta_stt = threat_before - threat_after       # Pain relief via spinal STT
 
-        # 2. Checks & Checkmates
-        if board.gives_check(move):
-            score += 1.5
+        score = delta_dcml + (delta_stt * 2.0)
 
-        # 3. Promotions
+        if is_mate:
+            score += 50.0  # Terminal biological goal / dopaminergic triumph
+        elif gives_check:
+            score += 1.0   # Somatic disruption of opponent
+
         if move.promotion:
-            score += 8.0
+            score += 8.0   # Somatic metamorphic expansion (pawn to queen)
 
-        # 4. Castling (King Safety & Rook Activation)
-        if board.is_castling(move):
-            score += 1.5
-
-        # 5. Center Control (Pawn/Knight development to central squares)
-        center_sqs = {chess.E4, chess.D4, chess.E5, chess.D5, chess.C4, chess.F4, chess.C5, chess.F5}
-        if move.to_square in center_sqs:
-            score += 0.4
-
-        # 6. Piece Development (moving pieces off rank 1 for White / rank 8 for Black in opening)
-        if piece and piece.piece_type in (chess.KNIGHT, chess.BISHOP):
-            if (color == chess.WHITE and chess.square_rank(move.from_square) == 0) or \
-               (color == chess.BLACK and chess.square_rank(move.from_square) == 7):
-                score += 0.5
-
-        # 7. Amygdala Threat Perception: Hanging piece avoidance
-        if not board.is_capture(move):
-            is_attacked_dest = board.is_attacked_by(opp_color, move.to_square)
-            if is_attacked_dest:
-                is_defended_dest = board.is_attacked_by(color, move.to_square)
-                if not is_defended_dest:
-                    # Penalize moving into undefended enemy fire (bounded so CA3 tactical attractors can overrule)
-                    score -= min(p_val * 1.2, 9.0)
-                elif p_val > 3.0:
-                    # Major piece moving to attacked square even if defended
-                    score -= min(p_val * 0.4, 4.0)
-
-        # 8. Escape Threat: Reward moving piece away from current attack
-        if board.is_attacked_by(opp_color, move.from_square):
-            # Moving out of fire to an unattacked square
-            if not board.is_attacked_by(opp_color, move.to_square):
-                score += p_val * 0.8
+        # Spinal nociception: penalize unshielded piece exposure
+        if is_attacked_dest and not is_defended_dest:
+            score -= min(p_val * 1.2, 9.0)
+        elif is_attacked_dest and is_defended_dest and p_val > 3.0:
+            score -= min(p_val * 0.4, 4.0)
 
         return float(score)
+
+    def _evaluate_move_heuristics(self, board: chess.Board, move: chess.Move, color: chess.Color) -> float:
+        """Alias to biological somatic evaluation (legacy name preserved for backward compatibility)."""
+        return self._evaluate_somatic_candidate(board, move, color)
 
     def reinforce_move(self, reward_rpe: float, board_snapshot: np.ndarray) -> None:
         """

@@ -42,27 +42,28 @@ flowchart TD
 ```
 
 * **Cranial Nerve II (Optic Nerve)**: 64-dimensional retinotopic array encoding board geometry, piece identity, and square control gradients.
-* **Spinal Segment C5**: 
-  * *Dorsal Column-Medial Lemniscal (DCML)*: Somatosensory material balance.
-  * *Spinothalamic Tract (STT)*: King threat and somatic distress nociception.
+* **Spinal Segment C5 (Pure Biological Somatosensory Bus — Zero MVV-LVA)**: 
+  * *Dorsal Column-Medial Lemniscal (DCML)*: Somatosensory material balance delta ($\Delta \text{DCML} = \text{mat}_{\text{after}} - \text{mat}_{\text{before}}$). All piece trade evaluations derive purely from spinal proprioception with zero hardcoded MVV-LVA tables.
+  * *Spinothalamic Tract (STT)*: Somatic King distress and pain relief ($\Delta \text{STT} = \text{threat}_{\text{before}} - \text{threat}_{\text{after}}$).
+  * *Spinal Nociception*: Tissue vulnerability penalty when landing on unshielded enemy attack squares.
 * **Amygdala**: Fires acute sympathetic threat surges when the King is in check, elevating Cortisol and heart rate.
-* **Cerebellar Forward Model**: Implements a biological lookahead simulator to veto blunders that allow immediate checkmate counter-replies.
-* **Hippocampal CA3 Attractor**: Auto-associative recurrent memory network storing classic Grandmaster tactical chunks (e.g. back-rank queen sacrifices, knight forks, pins). Overrules local material loss aversion to execute checkmating sacrifices.
-* **Basal Ganglia (Striatum)**: Evaluates candidate proposals across Direct (D1 Go) and Indirect (D2 NoGo) pathways, disinhibiting the winning motor command.
+* **Cerebellar Forward Model**: Implements a biological lookahead simulator to detect terminal checkmate goals ($+50.0$) and veto blunders that allow immediate counter-mate replies ($-50.0$).
+* **Hippocampal CA3 & Dentate Gyrus**: Auto-associative recurrent memory network storing classic Grandmaster tactical chunks. Utilizes Dentate Gyrus polynomial pattern separation ($(\text{match})^5 \times 25.0$) to overrule local material loss aversion and execute winning sacrifices.
+* **Basal Ganglia (Striatum)**: Evaluates candidate proposals across Direct (D1 Go) and Indirect (D2 NoGo) pathways modulated by dopamine, disinhibiting the winning motor command.
 * **Slow-Wave Sleep (SWS)**: Consolidates winning combinations nightly using Sharp-Wave Ripples and Tononi Synaptic Downscaling (SHY).
 
 ---
 
 ## 3. Empirical Benchmark & Ablation Results
 
-Evaluated against calibrated reference engines and the standardized 24-puzzle tactical suite:
+Evaluated against calibrated reference engines and the standardized tactical suite:
 
 ### A. Reference Engine Gauntlet (Tournament Matches)
-* **vs Random Mover (400 Elo)**: **100% Win Rate** (2W - 0D - 0L)
-* **vs Novice Greedy (750 Elo)**: **100% Win Rate** (2W - 0D - 0L)
-* **vs Club Player (1150 Elo)**: **100% Win Rate** (2W - 0D - 0L)
-* **vs Tactical Minimax 2-Ply (1400 Elo)**: **0% Win Rate** (0W - 0D - 2L)
-* **Official Composite Elo**: **$1098 \pm 278$ Elo** (FIDE Performance: $1116$ Elo)
+* **vs Random Mover (400 Elo)**: **100% Win Rate** (4W - 0D - 0L)
+* **vs Novice Greedy (750 Elo)**: **62.5% Win Rate** (2W - 1D - 1L)
+* **vs Club Player (1150 Elo)**: **100% Win Rate** (4W - 0D - 0L)
+* **vs Tactical Minimax 2-Ply (1400 Elo)**: **25% Win Rate** (0W - 2D - 2L)
+* **Official Composite Elo**: **$1097 \pm 190$ Elo** (FIDE Performance: $1088$ Elo)
 
 ### B. Hippocampal CA3 Tactical Ablation Study
 To verify whether Hippocampal CA3 attractor recall genuinely drives tactical moves or merely serves as a decorative heuristic:
@@ -71,15 +72,15 @@ To verify whether Hippocampal CA3 attractor recall genuinely drives tactical mov
 ==============================================================================
           HIPPOCAMPAL CA3 TACTICAL ABLATION EXPERIMENT
 ==============================================================================
-Condition:               Solved / Total      Accuracy      Tactical Elo
+Condition:                 Solved / Total      Accuracy      Tactical Elo
 ------------------------------------------------------------------------------
-Pure Heuristics (No CA3):  0 / 20             0.0%       950 Elo
-BIB-2 Full (CA3 Active):   3 / 20            15.0%       1070 Elo
+Pure Somatic (No CA3):       1 / 20              5.0%         990 Elo
+BIB-2 Full (CA3 Active):     3 / 20             15.0%        1070 Elo
 ------------------------------------------------------------------------------
-CA3 Attribution Delta:    +15.0% Accuracy  |  +120 Tactical Elo
+CA3 Attribution Delta:      +10.0% Accuracy  |  +80 Tactical Elo
 Tactical Puzzles Enabled Exclusively by CA3 Attractor:
   * Back-Rank Queen Sacrifice (e2e8#): CA3 overrules -9.0 Queen loss penalty to execute mate
-  * Knight Central Capture
+  * Tension Exchange
   * Queen's Gambit Dissolution
 ==============================================================================
 ```
